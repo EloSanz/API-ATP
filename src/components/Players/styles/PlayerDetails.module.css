@@ -1,0 +1,71 @@
+.playerDetailsPage {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 16px;
+}
+
+.header img {
+    width: 150px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.header h1 {
+    font-size: 2rem;
+    margin: 0;
+}
+
+.playerInfo {
+    background-color: #f9f9f9;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.playerInfo p {
+    margin: 8px 0;
+    font-size: 1.2rem;
+}
+
+.stats {
+    background-color: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats h2 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.stats table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stats th,
+.stats td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.stats th {
+    background-color: #f4f4f4;
+}
+
+.stats td {
+    text-align: right;
+}
