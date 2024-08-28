@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
 import { PlayerDto } from "../components/Players/playerDTO";
+import {transformPlayerData, cachePlayerPhotos, getCachedPlayerPhotos } from "./utils";
 
 const API_BASE_URL = "https://api.api-tennis.com/tennis/";
 const API_KEY =
@@ -18,31 +19,9 @@ export const getPlayer = async (
       },
     });
 
-    const playerData = response.data.result[0]; // Ajusta según la estructura real de la respuesta
-
-    const player: PlayerDto = {
-      player_key: parseInt(playerData.player_key, 10),
-      player_name: playerData.player_name,
-      player_full_name: playerData.player_full_name,
-      player_country: playerData.player_country,
-      player_bday: playerData.player_bday,
-      player_logo: playerData.player_logo,
-      stats: playerData.stats.map((stat: any) => ({
-        season: stat.season,
-        type: stat.type,
-        rank: stat.rank,
-        titles: stat.titles,
-        matches_won: stat.matches_won,
-        matches_lost: stat.matches_lost,
-        hard_won: stat.hard_won,
-        hard_lost: stat.hard_lost,
-        clay_won: stat.clay_won,
-        clay_lost: stat.clay_lost,
-        grass_won: stat.grass_won,
-        grass_lost: stat.grass_lost,
-      })),
-    };
-
+    const playerData = response.data.result[0];
+    const player: PlayerDto  = transformPlayerData(playerData);
+    
     return { result: player };
   } catch (error) {
     console.error("Error fetching player:", error);
@@ -50,9 +29,45 @@ export const getPlayer = async (
   }
 };
 
-export const getStandings = async (
+export const getStandings = async (eventType: "ATP" | "WTA" = "ATP"): Promise<{ result: PlayerDto[] }> => {
+  try {
+    const cachedPhotos = getCachedPlayerPhotos();
+    if(!cachedPhotos)
+      cachePlayerPhotos({});
+    else
+      console.log("Photos cached", cachedPhotos);
+
+    const standings = await fetchStandings(eventType);
+
+    const validStandings = standings.filter((player: any) => player.player_key);
+    const playerKeys = validStandings.map((player: any) => player.player_key);
+    const missingKeys = playerKeys.filter((key: string) => cachedPhotos && !cachedPhotos[key]);
+
+    if (missingKeys.length > 0) {
+      const photos = await fetchPlayerPhotos(missingKeys);
+      cachePlayerPhotos({ ...cachedPhotos, ...photos });
+    }
+
+    const players: PlayerDto[] = validStandings.map((player: any) => ({
+      player_key: player.player_key,
+      player_name: player.player_name,
+      player_full_name: player.player_full_name,
+      player_country: player.country,
+      player_bday: "",
+      player_logo: cachedPhotos ? cachedPhotos[player.player_key] || "" : "",
+      stats: [],
+    }));
+
+    return { result: players };
+  } catch (error) {
+    console.error("Error fetching standings:", error);
+    throw error;
+  }
+};
+
+const fetchStandings = async (
   eventType: "ATP" | "WTA" = "ATP"
-): Promise<{ result: PlayerDto[] }> => {
+): Promise<any[]> => {
   try {
     const response = await axios.get(API_BASE_URL, {
       params: {
@@ -62,22 +77,35 @@ export const getStandings = async (
       },
     });
 
-    const standings = response.data.result.slice(0, 20);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const players: PlayerDto[] = standings.map((player: any) => ({
-      player_key: parseInt(player.player_key, 10),
-      player_name: player.player,
-      player_full_name: player.player,
-      player_country: player.country,
-      player_bday: "", // Ajusta estos campos si la API proporciona más datos
-      player_logo: "",
-      stats: [], // Ajusta estos campos si la API proporciona más datos
-    }));
-
-    return { result: players };
+    return response.data.result.slice(0, 20);
   } catch (error) {
     console.error("Error fetching standings:", error);
+    throw error;
+  }
+};
+
+const fetchPlayerPhotos = async (playerKeys: string[]): Promise<Record<string, string>> => {
+  try {
+    const photos: Record<string, string> = {};
+
+    for (const playerKey of playerKeys) {
+      const response = await axios.get(API_BASE_URL, {
+        params: {
+          method: "get_players",
+          APIkey: API_KEY,
+          player_key: playerKey,
+        },
+      });
+
+      const player = response.data.result[0];
+      if (player && player.player_key) {
+        photos[player.player_key] = player.player_logo || player.player_full_name + ' without logo';
+      }
+    }
+
+    return photos;
+  } catch (error) {
+    console.error("Error fetching player photos:", error);
     throw error;
   }
 };

@@ -7,9 +7,8 @@ const HomePage: React.FC = () => {
   const [eventType, setEventType] = useState<'ATP' | 'WTA'>('ATP');
   const { players, loading, error } = usePlayers(eventType);
 
-  if (loading) { return <p>Loading players...</p>; }
-
-  if (error) { return <p>{error}</p>; }
+  if (loading) {  return <p>Loading players...</p>; }
+  if (error) {  return <p>{error}</p>;  }
 
   return (
     <div className={styles.homePage}>

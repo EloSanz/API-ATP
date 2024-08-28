@@ -14,7 +14,6 @@ export const usePlayerDetails = () => {
       try {
         const playerData = await getPlayer(playerKey);
         setPlayer(playerData.result);
-        //console.log('usePlayerDetails', data);  
       } catch (error) {
         setError("Error fetching player details");
         console.log(error);

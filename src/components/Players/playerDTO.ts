@@ -1,5 +1,5 @@
 export interface PlayerDto {
-  player_key: number;
+  player_key: string;
   player_name: string;
   player_full_name: string;
   player_country: string;
