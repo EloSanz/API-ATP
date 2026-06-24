@@ -1,4 +1,3 @@
-from PIL import GimpGradientFile
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -18,24 +17,21 @@ from sklearn import metrics
 def etl_dataset( df ):
     # Torque
     df['RPM'] = df['torque'].str.extract(r'(\d+)rpm', expand=False)
-    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False))
-    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False))
-    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False))
-    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False))
-    
+    df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False), inplace=True)
+    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False), inplace=True)
+    df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False), inplace=True)
+    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False), inplace=True)
     df['TORQUE'] = df['torque'].str.extract(r'(\d+)Nm@', expand=False)
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False))
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False))
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False))
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False))
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False))
-    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False))
-    
-    df['TORQUE'] = df['TORQUE'].astype(float)
-    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8)
-    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8)
-    
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False), inplace=True)
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False), inplace=True)
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False), inplace=True)
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False), inplace=True)
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False), inplace=True)
+    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False), inplace=True)
+    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8, inplace=True)
+    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8,inplace=True)
     df['RPM'] = df['RPM'].str.replace(',', '').astype(float)
+    df['TORQUE'] = df['TORQUE'].astype(float)
     # Brand
     df['BRAND'] = df['name'].astype('str').apply(lambda x: x.split()[0])
     # Milage
@@ -43,21 +39,20 @@ def etl_dataset( df ):
     # Engine
     df['ENGINE'] = (df['engine'].apply(lambda x: str(x).replace(' CC', ''))).astype(float)
     # Max Power
-    df['MAX_POWER'] = df['max_power'].astype(str).str.split().str[0]
-    df = df.drop(df[df['MAX_POWER'] == 'nan'].index, axis=0)
-    df = df.drop(df[df['MAX_POWER'] == 'bhp'].index, axis=0)
+    df['MAX_POWER'] = df['max_power'].astype(str).apply(lambda x: x.split()[0])
+    df.drop(df[df['MAX_POWER'] == 'bhp'].index, inplace=True, axis=0)
     df['MAX_POWER'] = df['MAX_POWER'].astype(float)
     # Drop columns
     return df.drop(['torque', 'name', 'mileage', 'engine', 'max_power'], axis=1)
-
 
 df_car = pd.read_csv('https://raw.githubusercontent.com/pokengineer/DataScience/main/datasets/car_price.csv')
 print(df_car.head(5)) # name,year,selling_price,km_driven,fuel,seller_type,transmission,owner,mileage,engine,max_power,torque,seats
 
 df_car = etl_dataset(df_car)
+print(df_car.head(5))
 
 # Identificamos las variables categóricas para crear dummies o incluirla de otra forma
-categorical = df_car.select_dtypes(include=['object', 'string', 'category']).columns.tolist()
+categorical = [var for var in df_car.columns if df_car[var].dtype=='O']
 print('las variables categoricas son:\n', categorical)
 print("\nchequeamos la dimensionalidad de las variables")
 for var in categorical:
@@ -66,7 +61,7 @@ for var in categorical:
 
 cat_cols_count = len(categorical)
 cat_rows = cat_cols_count // 3
-cat_rows += 1 if cat_cols_count % 3 != 0 else 0  # If the number of columns is not divisible by 3, create an additional row.
+cat_rows += 1 if cat_cols_count % 3 != 0 else 0  # Eğer sütun sayısı 3'e tam bölünmüyorsa bir ek satır oluştur.
 
 fig, axes = plt.subplots(cat_rows, 3, figsize=(10, 10), squeeze=True)
 axes = axes.flatten()
@@ -79,9 +74,8 @@ plt.tight_layout()
 plt.show()
 
 # identificamos las variables numéricas
-numerical = df_car.select_dtypes(exclude=['object', 'string', 'category']).columns.tolist()
+numerical = [var for var in df_car.columns if df_car[var].dtype!='O']
 print('las variables numéricas son:\n', numerical)
-
 
 for columna in numerical:
     df_car.plot(x=columna, y='selling_price',kind='scatter')
@@ -93,8 +87,7 @@ plt.show()
 # Verificamos si hay valores nulos para imputar
 df_car.isnull().sum()
 
-#pipeline
-
+#PIPELINE
 df_car.columns
 
 X_car = df_car.drop(columns="selling_price")
@@ -111,14 +104,13 @@ pl = Pipeline([
 
 pl.fit( X_train, y_train )
 
+#Regresion lineal simple
 
-#simple linear regression
 predicted = pl.predict(X_test)
 pl['regressor'].n_features_in_
 
 # score devuelve coeficiente de determinación, denominado R²
 print( "R²: " + str( pl.score(X_test,y_test) ))
-
 
 # Import matplotlib.pyplot
 import matplotlib.pyplot as plt
@@ -133,4 +125,3 @@ plt.ylabel("selling price")
 
 # Display the plot
 plt.show()
-
