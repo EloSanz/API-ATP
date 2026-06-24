@@ -25,21 +25,24 @@ def main():
 def etl_dataset( df ):
     # Torque
     df['RPM'] = df['torque'].str.extract(r'(\d+)rpm', expand=False)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False), inplace=True)
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False))
+    
     df['TORQUE'] = df['torque'].str.extract(r'(\d+)Nm@', expand=False)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False), inplace=True)
-    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8, inplace=True)
-    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8,inplace=True)
-    df['RPM'] = df['RPM'].str.replace(',', '').astype(float)
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False))
+    
     df['TORQUE'] = df['TORQUE'].astype(float)
+    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8)
+    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8)
+    
+    df['RPM'] = df['RPM'].str.replace(',', '').astype(float)
     # Brand
     df['BRAND'] = df['name'].astype('str').apply(lambda x: x.split()[0])
     # Milage
@@ -47,8 +50,9 @@ def etl_dataset( df ):
     # Engine
     df['ENGINE'] = (df['engine'].apply(lambda x: str(x).replace(' CC', ''))).astype(float)
     # Max Power
-    df['MAX_POWER'] = df['max_power'].astype(str).apply(lambda x: x.split()[0])
-    df.drop(df[df['MAX_POWER'] == 'bhp'].index, inplace=True, axis=0)
+    df['MAX_POWER'] = df['max_power'].astype(str).str.split().str[0]
+    df = df.drop(df[df['MAX_POWER'] == 'nan'].index, axis=0)
+    df = df.drop(df[df['MAX_POWER'] == 'bhp'].index, axis=0)
     df['MAX_POWER'] = df['MAX_POWER'].astype(float)
     # Drop columns
     return df.drop(['torque', 'name', 'mileage', 'engine', 'max_power'], axis=1)
