@@ -17,19 +17,19 @@ from sklearn import metrics
 def etl_dataset( df ):
     # Torque
     df['RPM'] = df['torque'].str.extract(r'(\d+)rpm', expand=False)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False), inplace=True)
-    df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False), inplace=True)
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d{1,3}(?:,\d{3})*)\(kgm@ rpm\)', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) RPM', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+)  rpm ', expand=False))
+    df['RPM'] = df['RPM'].fillna(df['torque'].str.extract(r'(\d+) rpm', expand=False))
     df['TORQUE'] = df['torque'].str.extract(r'(\d+)Nm@', expand=False)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False), inplace=True)
-    df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False), inplace=True)
-    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8, inplace=True)
-    df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8,inplace=True)
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)nm@', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+) Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)@', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)  Nm', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna(df['torque'].str.extract(r'(\d+)NM@', expand=False))
+    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)@\s*\d{1,3}(?:,\d{3})*\(kgm@ rpm\)', expand=False)).astype(float) * 9.8)
+    df['TORQUE'] = df['TORQUE'].fillna((df['torque'].str.extract(r'(\d{1,2}(?:[,.]\d{1,2})?)\s*kgm', expand=False)).astype(float) * 9.8)
     df['RPM'] = df['RPM'].str.replace(',', '').astype(float)
     df['TORQUE'] = df['TORQUE'].astype(float)
     # Brand
@@ -40,7 +40,7 @@ def etl_dataset( df ):
     df['ENGINE'] = (df['engine'].apply(lambda x: str(x).replace(' CC', ''))).astype(float)
     # Max Power
     df['MAX_POWER'] = df['max_power'].astype(str).apply(lambda x: x.split()[0])
-    df.drop(df[df['MAX_POWER'] == 'bhp'].index, inplace=True, axis=0)
+    df = df.drop(df[df['MAX_POWER'] == 'bhp'].index, axis=0)
     df['MAX_POWER'] = df['MAX_POWER'].astype(float)
     # Drop columns
     return df.drop(['torque', 'name', 'mileage', 'engine', 'max_power'], axis=1)
@@ -52,7 +52,7 @@ df_car = etl_dataset(df_car)
 print(df_car.head(5))
 
 # Identificamos las variables categóricas para crear dummies o incluirla de otra forma
-categorical = [var for var in df_car.columns if df_car[var].dtype=='O']
+categorical = df_car.select_dtypes(include=['object', 'string', 'category']).columns.tolist()
 print('las variables categoricas son:\n', categorical)
 print("\nchequeamos la dimensionalidad de las variables")
 for var in categorical:
@@ -74,7 +74,7 @@ plt.tight_layout()
 plt.show()
 
 # identificamos las variables numéricas
-numerical = [var for var in df_car.columns if df_car[var].dtype!='O']
+numerical = df_car.select_dtypes(exclude=['object', 'string', 'category']).columns.tolist()
 print('las variables numéricas son:\n', numerical)
 
 for columna in numerical:
